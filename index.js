@@ -37,6 +37,23 @@ async function run() {
     const db = client.db('dailyfixdb');
     const usersCollection = db.collection('users');
 
+
+    app.post('/users', async(req, res) =>{
+        const newUser = req.body;
+        const email = req.body.email;
+        const query = {email: email}
+        const existingUser = await usersCollection.findOne(query);
+        if(existingUser){
+            res.send('User already exists. Do not need to insert again.')
+        }
+        else{
+            const result = await usersCollection.insertOne(newUser);
+            res.send(result);
+        }
+
+
+        
+    })
     
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
