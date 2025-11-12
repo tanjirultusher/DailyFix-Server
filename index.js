@@ -36,6 +36,7 @@ async function run() {
 
     const db = client.db('dailyfixdb');
     const usersCollection = db.collection('users');
+    const servicesCollection = db.collection("services");
 
 
     app.post('/users', async(req, res) =>{
@@ -50,10 +51,42 @@ async function run() {
             const result = await usersCollection.insertOne(newUser);
             res.send(result);
         }
-
-
-        
     })
+
+    
+    app.post("/services", async (req, res) => {
+      const newService = req.body;
+      const title = newService.serviceTitle;
+
+      const query = { serviceTitle: title };
+      const existingService = await servicesCollection.findOne(query);
+
+      if (existingService) {
+        res.send("Service already exists. Do not insert again.");
+      } else {
+        const result = await servicesCollection.insertOne(newService);
+        res.send(result);
+      }
+    });
+
+    app.get('/users/', async (req, res) => {
+      const cursor = usersCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get("/services", async (req, res) => {
+      const cursor = await servicesCollection.find({});
+      const result = await cursor.toArray()
+      res.send(result);
+    });
+
+    app.get('/users/:uid', async (req, res) => {
+      const uid = req.params.uid;
+      const query = { uid: uid };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
     
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
