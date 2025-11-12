@@ -37,6 +37,8 @@ async function run() {
     const db = client.db('dailyfixdb');
     const usersCollection = db.collection('users');
     const servicesCollection = db.collection("services");
+    const bookingsCollection = db.collection("bookings");
+
 
 
     app.post('/users', async(req, res) =>{
@@ -67,6 +69,13 @@ async function run() {
         const result = await servicesCollection.insertOne(newService);
         res.send(result);
       }
+    });
+
+
+    app.post('/bookings', async(req, res)=>{
+      const newBooking = req.body;
+      const result = await bookingsCollection.insertOne(newBooking);
+      res.send(result);
     });
 
     app.get('/users/', async (req, res) => {
