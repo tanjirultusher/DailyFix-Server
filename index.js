@@ -5,7 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 require('dotenv').config()
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || PORT;
 
 // middleware
 app.use(cors());
@@ -14,7 +14,7 @@ app.use(express.json())
 
 //dailyfixdb
 //GYu0KY3SnYivkt2L
-const uri = "mongodb+srv://dailyfixdb:GYu0KY3SnYivkt2L@cluster0.upddivc.mongodb.net/?appName=Cluster0";
+const uri = "MONGODB_URI";
 
 const client = new MongoClient(uri, {
   serverApi: {
