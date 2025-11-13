@@ -1,33 +1,29 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const serverless = require('serverless-http'); 
 
 const app = express();
-require('dotenv').config()
-
-const port = process.env.PORT || PORT;
+require('dotenv').config();
 
 // middleware
 app.use(cors());
-app.use(express.json())
-
+app.use(express.json());
 
 const uri = process.env.MONGODB_URI;
-
 
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
-
+// Root route
 app.get('/', (req, res) => {
     res.send('Daily Fix server is running');
-})
-
+});
 
 async function run() {
   try {
@@ -38,123 +34,94 @@ async function run() {
     const servicesCollection = db.collection("services");
     const bookingsCollection = db.collection("bookings");
 
-
-
+    // Users
     app.post('/users', async(req, res) =>{
         const newUser = req.body;
-        const email = req.body.email;
-        const query = {email: email}
-        const existingUser = await usersCollection.findOne(query);
+        const existingUser = await usersCollection.findOne({ email: newUser.email });
         if(existingUser){
-            res.send('User already exists. Do not need to insert again.')
+            return res.send('User already exists. Do not need to insert again.');
         }
-        else{
-            const result = await usersCollection.insertOne(newUser);
-            res.send(result);
-        }
-    })
-
-    
-    app.post("/services", async (req, res) => {
-      const newService = req.body;
-      const title = newService.serviceTitle;
-
-      const query = { serviceTitle: title };
-      const existingService = await servicesCollection.findOne(query);
-
-      if (existingService) {
-        res.send("Service already exists. Do not insert again.");
-      } else {
-        const result = await servicesCollection.insertOne(newService);
+        const result = await usersCollection.insertOne(newUser);
         res.send(result);
-      }
     });
 
-
-    app.post('/bookings', async(req, res)=>{
-      const newBooking = req.body;
-      const result = await bookingsCollection.insertOne(newBooking);
-      res.send(result);
-    });
-
-    app.get('/users/', async (req, res) => {
-      const cursor = usersCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
-    })
-
-    app.get("/services", async (req, res) => {
-      const cursor = await servicesCollection.find({});
-      const result = await cursor.toArray()
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
     app.get('/users/:uid', async (req, res) => {
       const uid = req.params.uid;
-      const query = { uid: uid };
-      const result = await usersCollection.findOne(query);
+      const result = await usersCollection.findOne({ uid });
+      res.send(result);
+    });
+
+    app.patch('/users/:uid', async (req, res) => {
+      const uid = req.params.uid;
+      const { name, image } = req.body;
+      const result = await usersCollection.updateOne(
+        { uid },
+        { $set: { name, image } }
+      );
+      res.send(result);
+    });
+
+    // Services
+    app.post("/services", async (req, res) => {
+      const newService = req.body;
+      const existingService = await servicesCollection.findOne({ serviceTitle: newService.serviceTitle });
+      if (existingService) {
+        return res.send("Service already exists. Do not insert again.");
+      }
+      const result = await servicesCollection.insertOne(newService);
+      res.send(result);
+    });
+
+    app.get("/services", async (req, res) => {
+      const result = await servicesCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    app.patch('/services/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedService = req.body;
+      const result = await servicesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedService }
+      );
+      res.send(result);
+    });
+
+    app.delete("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const userEmail = req.query.email;
+      if (!userEmail) return res.status(401).send({ deletedCount: 0 });
+      const result = await servicesCollection.deleteOne({ _id: new ObjectId(id), providerEmail: userEmail });
+      res.send(result);
+    });
+
+    app.post('/bookings', async(req, res)=>{
+      const result = await bookingsCollection.insertOne(req.body);
       res.send(result);
     });
 
     app.get('/bookings', async (req, res) => {
       const email = req.query.email;
-      const query = {};
-      if (email) {
-        query.userEmail = email; 
-      }
+      const query = email ? { userEmail: email } : {};
       const result = await bookingsCollection.find(query).toArray();
       res.send(result);
     });
 
     app.delete('/bookings/:id', async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const result = await bookingsCollection.deleteOne(query);
+      const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
-    })
-
-    app.delete("/services/:id", async (req, res) => {
-      const id = req.params.id;
-      const userEmail = req.query.email; 
-
-      if (!userEmail) return res.status(401).send({ deletedCount: 0 });
-
-      const query = { _id: new ObjectId(id), providerEmail: userEmail };
-      const result = await servicesCollection.deleteOne(query);
-      res.send(result); 
     });
 
-    app.patch('/services/:id', async (req, res) => {
-    const id = req.params.id;
-    const updatedService = req.body;
-
-    const query = { _id: new ObjectId(id) };
-    const update = {
-        $set: {
-            serviceTitle: updatedService.serviceTitle,
-            description: updatedService.description,
-            category: updatedService.category,
-            minPrice: updatedService.minPrice,
-            maxPrice: updatedService.maxPrice,
-            image: updatedService.image
-        }
-    };
-      const result = await servicesCollection.updateOne(query, update)
-      res.send(result)
-    })
-    
-    // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } 
-  finally {
-    
+    console.log("MongoDB connected successfully!");
+  } finally {
   }
 }
 run().catch(console.dir);
 
-
-app.listen(port, () => {
-    console.log(`Smart server is running on port: ${port}`)
-})
-
-module.exports = app;
+module.exports.handler = serverless(app);
