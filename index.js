@@ -12,9 +12,8 @@ app.use(cors());
 app.use(express.json())
 
 
-//dailyfixdb
-//GYu0KY3SnYivkt2L
-const uri = "MONGODB_URI";
+const uri = process.env.MONGODB_URI;
+
 
 const client = new MongoClient(uri, {
   serverApi: {
