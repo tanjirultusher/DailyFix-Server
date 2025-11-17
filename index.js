@@ -3,7 +3,8 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
-const port = 3000
+
+const port = process.env.PORT || 3000;
 
 const app = express();
 
@@ -21,19 +22,19 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Root route
-app.get('/', (req, res) => {
-    res.send('Daily Fix server is running');
-});
+
 
 async function run() {
   try {
-    await client.connect();
-
     const db = client.db('dailyfixdb');
     const usersCollection = db.collection('users');
     const servicesCollection = db.collection("services");
     const bookingsCollection = db.collection("bookings");
+
+    // Root route
+    app.get('/', (req, res) => {
+      res.send('Daily Fix server is running');
+    });
 
     // Users
     app.post('/users', async(req, res) =>{
@@ -125,4 +126,6 @@ async function run() {
 }
 run().catch(console.dir);
 
-export default app;
+app.listen(port, () => {
+    console.log(`server is running on port: ${port}`)
+})
