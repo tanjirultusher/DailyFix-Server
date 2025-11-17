@@ -1,16 +1,17 @@
-const express = require('express');
+const express = require ('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const serverless = require('serverless-http'); 
+require('dotenv').config();
+
+const port = 3000
 
 const app = express();
-require('dotenv').config();
 
 // middleware
 app.use(cors());
 app.use(express.json());
 
-const uri = process.env.MONGODB_URI;
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.upddivc.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -66,7 +67,6 @@ async function run() {
       res.send(result);
     });
 
-    // Services
     app.post("/services", async (req, res) => {
       const newService = req.body;
       const existingService = await servicesCollection.findOne({ serviceTitle: newService.serviceTitle });
@@ -91,6 +91,7 @@ async function run() {
       );
       res.send(result);
     });
+
 
     app.delete("/services/:id", async (req, res) => {
       const id = req.params.id;
@@ -124,4 +125,4 @@ async function run() {
 }
 run().catch(console.dir);
 
-module.exports.handler = serverless(app);
+export default app;
